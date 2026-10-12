@@ -7,13 +7,13 @@ import {
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBtvfBrWkq5zIzDwbmFU_b7Rt0a1u7k-z8",
-  authDomain: "study-task-app-aac17.firebaseapp.com",
-  databaseURL: "https://study-task-app-aac17-default-rtdb.firebaseio.com",
-  projectId: "study-task-app-aac17",
-  storageBucket: "study-task-app-aac17.firebasestorage.app",
-  messagingSenderId: "797260954076",
-  appId: "1:797260954076:web:ce4b909300328a22417719"
+  apiKey: "AIzaSyBaAfoK3e5gKaNKWD09MJmMct_4uWrcjJw",
+  authDomain: "study-task-app-2.firebaseapp.com",
+  databaseURL: "https://study-task-app-2-default-rtdb.firebaseio.com",
+  projectId: "study-task-app-2",
+  storageBucket: "study-task-app-2.firebasestorage.app",
+  messagingSenderId: "881027647543",
+  appId: "1:881027647543:web:5c22e139388f6ed1f117b2"
 };
 
 const LEGACY_STORAGE_KEY = "studyTaskData";
