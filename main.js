@@ -48,6 +48,7 @@ let initialDataLoaded = false;
 let dragonsLoaded = false;
 let currentDragonLoaded = false;
 let dragonInitializationStarted = false;
+let initialDragonSetup = false;
 let pendingSave = Promise.resolve();
 let pendingDragonSave = Promise.resolve();
 let taskReorderGesture = null;
@@ -390,7 +391,7 @@ async function deletePreset(id, preset) {
 }
 
 function setEditingEnabled(enabled) {
-  ["datePicker", "addDateBtn", "clearTasksBtn", "addTaskBtn", "operationLogBtn", "openPresetsBtn", "dragonManagerBtn"].forEach(id => {
+  ["datePicker", "addDateBtn", "clearTasksBtn", "addTaskBtn", "operationLogBtn", "openPresetsBtn"].forEach(id => {
     document.getElementById(id).disabled = !enabled;
   });
 }
@@ -644,7 +645,9 @@ function renderDragonManager() {
   const newDragonForm = document.getElementById("newDragonForm");
   if (!dragon) {
     panel.classList.add("hidden");
-    newDragonForm.classList.add("hidden");
+    newDragonForm.classList.toggle("hidden", !initialDragonSetup);
+    newDragonForm.querySelector("label").textContent = "卵の名前（10文字まで）";
+    newDragonForm.querySelector('button[type="submit"]').textContent = "育てる";
     renderDragonCollection();
     return;
   }
@@ -672,10 +675,14 @@ function renderDragonManager() {
   const typeLabel = ({ cute: "キュート", cool: "クール", yuru: "ゆる" })[dragon.type];
   document.getElementById("dragonType").textContent =
     typeLabel ? `属性: ${typeLabel}` : "属性: 孵化後に決定";
-  newDragonForm.classList.toggle(
-    "hidden",
-    !Object.values(dragons).some(item => item.stage === "elder")
-  );
+  const canStartNewDragon = Object.values(dragons).some(item => item.stage === "elder");
+  newDragonForm.classList.toggle("hidden", !initialDragonSetup && !canStartNewDragon);
+  newDragonForm.querySelector("label").textContent = initialDragonSetup
+    ? "卵の名前（10文字まで）"
+    : "新しい卵の名前（10文字まで）";
+  newDragonForm.querySelector('button[type="submit"]').textContent = initialDragonSetup
+    ? "育てる"
+    : "新しい卵を育てる";
   renderDragonMemories(dragon);
   renderDragonCollection();
 }
@@ -744,6 +751,7 @@ function awardDragonRewardsForCompletion(date, task) {
 function initializeDragonData() {
   if (!dragonsLoaded || !currentDragonLoaded || dragonInitializationStarted) return;
   dragonInitializationStarted = true;
+  document.getElementById("dragonStatus").textContent = "";
   if (!dragons[currentDragonId]) {
     const firstDragonId = Object.keys(dragons)[0];
     if (firstDragonId) {
@@ -753,17 +761,7 @@ function initializeDragonData() {
         setSyncStatus(`育成中のドラゴンを設定できませんでした: ${error.message}`, true);
       });
     } else {
-      const id = typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : `${Date.now()}_${Math.random().toString(16).slice(2)}`;
-      const dragon = createDragon("たまご");
-      dragons[id] = dragon;
-      currentDragonId = id;
-      void persistDragon(id, dragon);
-      void set(ref(database, "currentDragon"), id).catch(error => {
-        console.error("育成中のドラゴンを設定できませんでした。", error);
-        setSyncStatus(`育成中のドラゴンを設定できませんでした: ${error.message}`, true);
-      });
+      currentDragonId = null;
     }
   }
   renderDragonManager();
@@ -1427,15 +1425,38 @@ function init() {
     }
   };
   document.getElementById("dragonManagerBtn").onclick = () => {
+    if (!dragonsLoaded || !currentDragonLoaded) {
+      document.getElementById("dragonStatus").textContent =
+        "ドラゴンデータを読み込み中です。少し待ってからもう一度お試しください。";
+      document.getElementById("dragonOverlay").classList.remove("hidden");
+      return;
+    }
+    if (Object.keys(dragons).length === 0) {
+      void showConfirmation("何かの卵があります。育てますか？").then(confirmed => {
+        if (!confirmed) return;
+        initialDragonSetup = true;
+        document.getElementById("newDragonName").value = "";
+        document.getElementById("dragonStatus").textContent = "";
+        document.getElementById("dragonOverlay").classList.remove("hidden");
+        renderDragonManager();
+        document.getElementById("newDragonName").focus();
+      });
+      return;
+    }
+    initialDragonSetup = false;
     renderDragonManager();
     document.getElementById("dragonOverlay").classList.remove("hidden");
   };
   document.getElementById("closeDragonBtn").onclick = () => {
+    initialDragonSetup = false;
     document.getElementById("dragonOverlay").classList.add("hidden");
+    renderDragonManager();
   };
   document.getElementById("dragonOverlay").onkeydown = event => {
     if (event.key === "Escape") {
+      initialDragonSetup = false;
       document.getElementById("dragonOverlay").classList.add("hidden");
+      renderDragonManager();
     }
   };
   document.getElementById("saveDragonNameBtn").onclick = async () => {
@@ -1463,7 +1484,8 @@ function init() {
         "新しい卵の名前を1〜10文字で入力してください。";
       return;
     }
-    if (!Object.values(dragons).some(dragon => dragon.stage === "elder")) return;
+    const isInitialDragon = initialDragonSetup && Object.keys(dragons).length === 0;
+    if (!isInitialDragon && !Object.values(dragons).some(dragon => dragon.stage === "elder")) return;
     const id = typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
       : `${Date.now()}_${Math.random().toString(16).slice(2)}`;
@@ -1475,6 +1497,7 @@ function init() {
       });
       dragons[id] = dragon;
       currentDragonId = id;
+      initialDragonSetup = false;
       document.getElementById("newDragonName").value = "たまご";
       document.getElementById("dragonStatus").textContent = "";
       renderDragonManager();
