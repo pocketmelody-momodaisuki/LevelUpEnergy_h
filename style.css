@@ -86,6 +86,11 @@ h2 {
   overflow-y: auto;
 }
 
+.presets-open-btn {
+  width: 100%;
+  margin: 0 0 10px;
+}
+
 .date-item {
   padding: 0;
   border-radius: 6px;
@@ -376,6 +381,10 @@ button.secondary {
   z-index: 150;
 }
 
+.presets-overlay {
+  z-index: 140;
+}
+
 .confirm-content {
   box-sizing: border-box;
   width: min(360px, calc(100% - 32px));
@@ -549,6 +558,121 @@ button.secondary {
   color: #555555;
 }
 
+.presets-content {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: min(680px, calc(100% - 32px));
+  max-height: min(85vh, 760px);
+  padding: 24px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  overflow-y: auto;
+}
+
+.presets-header,
+.preset-item,
+.preset-actions,
+.preset-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.presets-header {
+  margin-bottom: 12px;
+}
+
+.presets-header h2,
+.preset-form h3 {
+  margin: 0;
+}
+
+.preset-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 18px;
+}
+
+.preset-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #e0e0e5;
+}
+
+.preset-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.preset-details span,
+.preset-empty {
+  color: #555555;
+  font-size: 14px;
+}
+
+.preset-actions {
+  flex: 0 0 auto;
+}
+
+.preset-form {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e5;
+}
+
+.preset-form h3,
+.preset-repeat,
+.preset-error,
+.preset-form-actions {
+  grid-column: 1 / -1;
+}
+
+.preset-form input[type="text"],
+.preset-form input[type="number"] {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 7px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.preset-repeat {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid #cccccc;
+  border-radius: 6px;
+}
+
+.preset-repeat label {
+  white-space: nowrap;
+}
+
+.preset-error {
+  min-height: 20px;
+  color: #b42318;
+  overflow-wrap: anywhere;
+}
+
+.preset-form-actions {
+  justify-content: flex-end;
+}
+
+.preset-form-actions button.hidden {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .task-list-topbar {
     display: grid;
@@ -623,6 +747,22 @@ button.secondary {
 
   .operation-log-content {
     padding: 18px;
+  }
+
+  .presets-content {
+    padding: 18px;
+  }
+
+  .preset-form {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .preset-form h3,
+  .preset-repeat,
+  .preset-error,
+  .preset-form-actions {
+    grid-column: 1;
   }
 }
 

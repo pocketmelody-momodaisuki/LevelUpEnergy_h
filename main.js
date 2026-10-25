@@ -1,9 +1,12 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
 import {
   getDatabase,
+  get,
   onValue,
   ref,
-  set
+  set,
+  update,
+  remove
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
 
 const firebaseConfig = {
@@ -18,10 +21,19 @@ const firebaseConfig = {
 
 const LEGACY_STORAGE_KEY = "studyTaskData";
 const MAX_OPERATION_LOGS = 500;
+const WEEKDAYS = [
+  ["mon", "月"],
+  ["tue", "火"],
+  ["wed", "水"],
+  ["thu", "木"],
+  ["fri", "金"],
+  ["sat", "土"],
+  ["sun", "日"]
+];
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const sharedDataRef = ref(database, "studyTaskData");
-let data = { tasks: [], days: {}, logs: [] };
+let data = { tasks: [], days: {}, logs: [], presets: {} };
 let currentDate = null;
 let runningTimerId = null;
 let runningSessionSeconds = 0;
@@ -52,6 +64,10 @@ function normalizeData(value) {
     : [];
   const sourceDays = source.days && typeof source.days === "object" ? source.days : {};
   const days = {};
+  const sourcePresets = source.presets && typeof source.presets === "object"
+    ? source.presets
+    : {};
+  const presets = {};
   const logs = Array.isArray(source.logs)
     ? source.logs.filter(entry => entry && typeof entry.timestamp === "string" && typeof entry.message === "string")
     : [];
@@ -59,9 +75,30 @@ function normalizeData(value) {
   Object.entries(sourceDays).forEach(([date, dayTasks]) => {
     if (Array.isArray(dayTasks)) {
       days[date] = dayTasks.filter(task => task && typeof task === "object");
+    } else if (dayTasks && typeof dayTasks === "object") {
+      const entries = Object.entries(dayTasks);
+      if (entries.every(([key]) => /^\d+$/.test(key))) {
+        days[date] = entries
+          .sort(([left], [right]) => Number(left) - Number(right))
+          .map(([, task]) => task)
+          .filter(task => task && typeof task === "object");
+      }
     }
   });
-  return { tasks, days, logs };
+  Object.entries(sourcePresets).forEach(([id, preset]) => {
+    if (!preset || typeof preset !== "object") return;
+    const sourceRepeat = preset.repeat && typeof preset.repeat === "object" ? preset.repeat : {};
+    const repeat = {};
+    WEEKDAYS.forEach(([key]) => {
+      repeat[key] = sourceRepeat[key] === true;
+    });
+    presets[id] = {
+      name: typeof preset.name === "string" ? preset.name : "",
+      plannedMinutes: Number(preset.plannedMinutes) || 30,
+      repeat
+    };
+  });
+  return { tasks, days, logs, presets };
 }
 
 function readLegacyData() {
@@ -240,8 +277,114 @@ function handleTouchMove(event) {
   moveTaskReorder(touch.clientX, touch.clientY, event);
 }
 
+function getWeekdayKey(dateStr) {
+  const date = new Date(`${dateStr}T00:00:00`);
+  if (isNaN(date.getTime())) return null;
+  return WEEKDAYS[(date.getDay() + 6) % 7][0];
+}
+
+function getTasksFromPresets(dateStr) {
+  const weekday = getWeekdayKey(dateStr);
+  if (!weekday) return [];
+  return Object.values(data.presets)
+    .filter(preset => preset.repeat[weekday])
+    .map(preset => ({
+      id: Date.now() + "_" + Math.random().toString(16).slice(2),
+      name: preset.name,
+      plannedMinutes: preset.plannedMinutes,
+      actualMinutes: null,
+      completed: false
+    }));
+}
+
+function renderPresetList() {
+  const list = document.getElementById("presetList");
+  list.innerHTML = "";
+  const entries = Object.entries(data.presets);
+  if (entries.length === 0) {
+    const emptyMessage = document.createElement("li");
+    emptyMessage.className = "preset-empty";
+    emptyMessage.textContent = "プリセットはまだありません。";
+    list.appendChild(emptyMessage);
+    return;
+  }
+
+  entries.forEach(([id, preset]) => {
+    const item = document.createElement("li");
+    item.className = "preset-item";
+    const details = document.createElement("div");
+    details.className = "preset-details";
+    const name = document.createElement("strong");
+    name.textContent = preset.name;
+    const schedule = document.createElement("span");
+    const repeatedDays = WEEKDAYS
+      .filter(([key]) => preset.repeat[key])
+      .map(([, label]) => label)
+      .join("・");
+    schedule.textContent =
+      `${preset.plannedMinutes}分 / ${repeatedDays || "曜日指定なし"}`;
+    details.append(name, schedule);
+
+    const actions = document.createElement("div");
+    actions.className = "preset-actions";
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.className = "secondary";
+    editButton.textContent = "編集";
+    editButton.onclick = () => editPreset(id, preset);
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "delete-task-btn";
+    deleteButton.textContent = "削除";
+    deleteButton.onclick = () => deletePreset(id, preset);
+    actions.append(editButton, deleteButton);
+    item.append(details, actions);
+    list.appendChild(item);
+  });
+}
+
+function resetPresetForm() {
+  document.getElementById("presetForm").reset();
+  document.getElementById("presetMinutes").value = "30";
+  document.getElementById("presetFormTitle").textContent = "プリセットを追加";
+  document.getElementById("savePresetBtn").textContent = "追加";
+  document.getElementById("cancelPresetEditBtn").classList.add("hidden");
+  document.getElementById("presetError").textContent = "";
+  document.getElementById("presetForm").dataset.editingId = "";
+}
+
+function editPreset(id, preset) {
+  const form = document.getElementById("presetForm");
+  form.dataset.editingId = id;
+  document.getElementById("presetName").value = preset.name;
+  document.getElementById("presetMinutes").value = String(preset.plannedMinutes);
+  form.querySelectorAll('input[name="presetDay"]').forEach(checkbox => {
+    checkbox.checked = preset.repeat[checkbox.value] === true;
+  });
+  document.getElementById("presetFormTitle").textContent = "プリセットを編集";
+  document.getElementById("savePresetBtn").textContent = "変更を保存";
+  document.getElementById("cancelPresetEditBtn").classList.remove("hidden");
+  document.getElementById("presetError").textContent = "";
+  document.getElementById("presetName").focus();
+}
+
+async function deletePreset(id, preset) {
+  if (!await showConfirmation(`プリセット「${preset.name}」を削除しますか？`)) return;
+  try {
+    await remove(ref(database, `studyTaskData/presets/${id}`));
+    delete data.presets[id];
+    renderPresetList();
+    setSyncStatus("Firebaseと同期済み");
+  } catch (error) {
+    console.error("プリセットの削除に失敗しました。", error);
+    document.getElementById("presetError").textContent =
+      `プリセットを削除できませんでした: ${error.message}`;
+    setSyncStatus(`プリセットの削除に失敗しました: ${error.message}`, true);
+  }
+}
+
 function setEditingEnabled(enabled) {
-  ["datePicker", "addDateBtn", "clearTasksBtn", "addTaskBtn", "operationLogBtn"].forEach(id => {
+  ["datePicker", "addDateBtn", "clearTasksBtn", "addTaskBtn", "operationLogBtn", "openPresetsBtn"].forEach(id => {
     document.getElementById(id).disabled = !enabled;
   });
 }
@@ -266,12 +409,13 @@ function renderData() {
   renderDateList();
   renderTaskMasterList();
   renderTaskList();
+  renderPresetList();
   if (!document.getElementById("operationLogOverlay").classList.contains("hidden")) {
     renderOperationLogs();
   }
 }
 
-function handleSharedData(snapshot) {
+async function handleSharedData(snapshot) {
   const isFirstLoad = !initialDataLoaded;
   const needsInitialSave = !snapshot.exists();
   let legacyData = null;
@@ -288,24 +432,47 @@ function handleSharedData(snapshot) {
 
   data = snapshot.exists()
     ? normalizeData(snapshot.val())
-    : { tasks: [], days: {}, logs: [] };
+    : { tasks: [], days: {}, logs: [], presets: {} };
   if (legacyData) data = mergeLegacyData(data, legacyData);
 
   if (isFirstLoad) {
     initialDataLoaded = true;
-    setEditingEnabled(true);
     currentDate = getTodayStr();
     document.getElementById("datePicker").value = currentDate;
   }
 
   const addedToday = !data.days[currentDate];
-  if (addedToday) data.days[currentDate] = [];
+  if (addedToday) data.days[currentDate] = getTasksFromPresets(currentDate);
   renderData();
 
-  if (needsInitialSave || legacyData !== null || addedToday) {
-    saveData(legacyData !== null);
-  } else if (isFirstLoad) {
-    setSyncStatus("Firebaseと同期済み");
+  if (legacyData !== null) {
+    setEditingEnabled(true);
+    saveData(true);
+  } else if (addedToday) {
+    setEditingEnabled(false);
+    try {
+      const tasks = data.days[currentDate];
+      await pendingSave;
+      await update(sharedDataRef, {
+        [`days/${currentDate}`]: tasks.length > 0 ? tasks : {}
+      });
+      const refreshed = await get(sharedDataRef);
+      data = normalizeData(refreshed.val());
+      renderData();
+      setSyncStatus("Firebaseと同期済み");
+    } catch (error) {
+      console.error("今日の日付の保存に失敗しました。", error);
+      setSyncStatus(`今日の日付を保存できませんでした: ${error.message}`, true);
+    } finally {
+      setEditingEnabled(true);
+    }
+  } else {
+    setEditingEnabled(true);
+    if (needsInitialSave) {
+      saveData();
+    } else if (isFirstLoad) {
+      setSyncStatus("Firebaseと同期済み");
+    }
   }
 }
 
@@ -887,18 +1054,102 @@ function init() {
   datePicker.value = todayStr;
   currentDate = todayStr;
   setEditingEnabled(false);
-  document.getElementById("addDateBtn").onclick = () => {
+  document.getElementById("addDateBtn").onclick = async () => {
     const selected = datePicker.value;
     if (!selected) return;
     const isNewDate = !data.days[selected];
-    ensureDay(selected);
-    currentDate = selected;
+    let canSelectDate = true;
     if (isNewDate) {
-      addOperationLog(`${formatLogDate(selected)}のタスクリストを作成しました。`);
+      const previousLogs = data.logs.slice();
+      const tasks = getTasksFromPresets(selected);
+      data.days[selected] = tasks;
+      addOperationLog(
+        `${formatLogDate(selected)}のタスクリストを作成しました。` +
+        (tasks.length > 0 ? `（プリセットから${tasks.length}件追加）` : "")
+      );
+      setSyncStatus("Firebaseに保存中...");
+      document.getElementById("addDateBtn").disabled = true;
+      try {
+        await pendingSave;
+        const updates = {
+          [`days/${selected}`]: tasks.length > 0 ? tasks : {},
+          logs: data.logs
+        };
+        await update(sharedDataRef, updates);
+        const snapshot = await get(sharedDataRef);
+        const refreshedData = normalizeData(snapshot.val());
+        if (!refreshedData.days[selected]) {
+          throw new Error("保存後に日付を読み込めませんでした。");
+        }
+        data = refreshedData;
+        setSyncStatus("Firebaseと同期済み");
+      } catch (error) {
+        console.error("新しい日付の保存に失敗しました。", error);
+        delete data.days[selected];
+        data.logs = previousLogs;
+        canSelectDate = false;
+        setSyncStatus(`新しい日付を保存できませんでした: ${error.message}`, true);
+      } finally {
+        document.getElementById("addDateBtn").disabled = false;
+      }
+    } else {
+      ensureDay(selected);
     }
-    saveData();
+    if (canSelectDate) {
+      currentDate = selected;
+      document.getElementById("datePicker").value = selected;
+    }
     renderDateList();
     renderTaskList();
+  };
+  document.getElementById("openPresetsBtn").onclick = () => {
+    renderPresetList();
+    document.getElementById("presetsOverlay").classList.remove("hidden");
+    document.getElementById("presetName").focus();
+  };
+  document.getElementById("closePresetsBtn").onclick = () => {
+    document.getElementById("presetsOverlay").classList.add("hidden");
+    resetPresetForm();
+  };
+  document.getElementById("cancelPresetEditBtn").onclick = resetPresetForm;
+  document.getElementById("presetsOverlay").onkeydown = event => {
+    if (event.key === "Escape") {
+      document.getElementById("presetsOverlay").classList.add("hidden");
+      resetPresetForm();
+    }
+  };
+  document.getElementById("presetForm").onsubmit = async event => {
+    event.preventDefault();
+    const name = document.getElementById("presetName").value.trim();
+    const plannedMinutes = Number(document.getElementById("presetMinutes").value);
+    const errorElement = document.getElementById("presetError");
+    if (!name || !Number.isInteger(plannedMinutes) || plannedMinutes < 1) {
+      errorElement.textContent = "タスク名と1分以上の所要時間を入力してください。";
+      return;
+    }
+
+    const repeat = {};
+    document.querySelectorAll('#presetForm input[name="presetDay"]').forEach(checkbox => {
+      repeat[checkbox.value] = checkbox.checked;
+    });
+    const preset = { name, plannedMinutes, repeat };
+    const editingId = event.currentTarget.dataset.editingId;
+    const id = editingId || (
+      typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now()}_${Math.random().toString(16).slice(2)}`
+    );
+    try {
+      await set(ref(database, `studyTaskData/presets/${id}`), preset);
+      data.presets[id] = preset;
+      renderPresetList();
+      resetPresetForm();
+      setSyncStatus("Firebaseと同期済み");
+    } catch (error) {
+      console.error("プリセットの保存に失敗しました。", error);
+      errorElement.textContent = `プリセットを保存できませんでした: ${error.message}`;
+      setSyncStatus(`プリセットの保存に失敗しました: ${error.message}`, true);
+    }
   };
   document.getElementById("addTaskBtn").onclick = () => {
     addTaskToCurrentDate();

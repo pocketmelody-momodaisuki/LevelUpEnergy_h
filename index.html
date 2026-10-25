@@ -23,6 +23,7 @@
     <main class="main">
       <section class="date-list-section">
         <h2>日付一覧</h2>
+        <button id="openPresetsBtn" class="secondary presets-open-btn">プリセット管理</button>
         <ul id="dateList" class="date-list"></ul>
       </section>
       <section class="task-list-section">
@@ -105,6 +106,37 @@
           <button id="operationLogCloseBtn" class="secondary">閉じる</button>
         </div>
         <ul id="operationLogList" class="operation-log-list"></ul>
+      </div>
+    </div>
+    <div id="presetsOverlay" class="overlay presets-overlay hidden">
+      <div class="presets-content" role="dialog" aria-modal="true" aria-labelledby="presetsTitle">
+        <div class="presets-header">
+          <h2 id="presetsTitle">プリセット管理</h2>
+          <button id="closePresetsBtn" class="secondary" type="button">閉じる</button>
+        </div>
+        <ul id="presetList" class="preset-list"></ul>
+        <form id="presetForm" class="preset-form">
+          <h3 id="presetFormTitle">プリセットを追加</h3>
+          <label class="preset-name-label" for="presetName">タスク名</label>
+          <input id="presetName" type="text" required maxlength="200">
+          <label class="preset-minutes-label" for="presetMinutes">所要時間（分）</label>
+          <input id="presetMinutes" type="number" min="1" step="1" value="30" required>
+          <fieldset class="preset-repeat">
+            <legend>繰り返す曜日</legend>
+            <label><input type="checkbox" name="presetDay" value="mon">月</label>
+            <label><input type="checkbox" name="presetDay" value="tue">火</label>
+            <label><input type="checkbox" name="presetDay" value="wed">水</label>
+            <label><input type="checkbox" name="presetDay" value="thu">木</label>
+            <label><input type="checkbox" name="presetDay" value="fri">金</label>
+            <label><input type="checkbox" name="presetDay" value="sat">土</label>
+            <label><input type="checkbox" name="presetDay" value="sun">日</label>
+          </fieldset>
+          <div id="presetError" class="preset-error" role="status"></div>
+          <div class="preset-form-actions">
+            <button id="cancelPresetEditBtn" class="secondary hidden" type="button">編集をキャンセル</button>
+            <button id="savePresetBtn" type="submit">追加</button>
+          </div>
+        </form>
       </div>
     </div>
     <div id="confirmOverlay" class="overlay confirm-overlay hidden">
