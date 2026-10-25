@@ -571,9 +571,14 @@ function normalizeDragon(value) {
 }
 
 function getDragonImagePath(dragon) {
-  if (dragon.stage === "egg") return "/images/dragons/egg.png";
+  if (dragon.stage === "egg") {
+    return new URL("./images/dragons/egg.png", import.meta.url).href;
+  }
   const branchSuffix = dragon.stage === "elder" ? `_${dragon.branch}` : "";
-  return `/images/dragons/${dragon.stage}_${dragon.type}${branchSuffix}.png`;
+  return new URL(
+    `./images/dragons/${dragon.stage}_${dragon.type}${branchSuffix}.png`,
+    import.meta.url
+  ).href;
 }
 
 function getDragonRarity(dragon) {
