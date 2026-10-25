@@ -369,6 +369,10 @@ button.secondary {
   z-index: 100;
 }
 
+.hidden {
+  display: none !important;
+}
+
 .overlay.hidden {
   display: none;
 }
@@ -383,6 +387,10 @@ button.secondary {
 
 .presets-overlay {
   z-index: 140;
+}
+
+.dragon-overlay {
+  z-index: 145;
 }
 
 .confirm-content {
@@ -673,6 +681,219 @@ button.secondary {
   display: none;
 }
 
+.dragon-content {
+  box-sizing: border-box;
+  width: min(820px, calc(100% - 32px));
+  max-height: min(88vh, 820px);
+  padding: 24px;
+  overflow-y: auto;
+  border-radius: 18px;
+  background: #fff8e9;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.dragon-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.dragon-header h2,
+.dragon-collection-section h3,
+.dragon-memories h3 {
+  margin: 0;
+}
+
+.dragon-current-panel {
+  --dragon-accent: #e7a12e;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 20px;
+  border: 3px solid var(--dragon-accent);
+  border-radius: 24px;
+  background: #fffdf8;
+}
+
+.dragon-current-panel[data-type="cute"] {
+  --dragon-accent: #e78caf;
+  border-radius: 32px;
+  background: #fff3f8;
+}
+
+.dragon-current-panel[data-type="cool"] {
+  --dragon-accent: #3977bd;
+  border-radius: 8px;
+  background: #edf5ff;
+}
+
+.dragon-current-panel[data-type="yuru"],
+.dragon-current-panel[data-type="egg"] {
+  --dragon-accent: #e7a12e;
+}
+
+.dragon-image {
+  width: min(40%, 260px);
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.dragon-details {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.dragon-stage-label {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.dragon-name-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.dragon-name-editor input,
+.new-dragon-form input {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid #cccccc;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.dragon-name-editor input {
+  flex: 1;
+}
+
+.dragon-level-label,
+.dragon-stats {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.dragon-xp-track {
+  height: 18px;
+  overflow: hidden;
+  border: 2px solid var(--dragon-accent);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.dragon-xp-fill {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--dragon-accent);
+  transition: width 180ms ease;
+}
+
+.dragon-xp-label,
+.dragon-type {
+  font-size: 14px;
+}
+
+.dragon-memories {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.8);
+}
+
+.dragon-memories dl {
+  display: grid;
+  grid-template-columns: minmax(130px, auto) 1fr;
+  gap: 8px 16px;
+  margin-bottom: 0;
+}
+
+.dragon-memories dt {
+  font-weight: 600;
+}
+
+.dragon-memories dd {
+  margin: 0;
+}
+
+.dragon-collection-section {
+  margin-top: 22px;
+}
+
+.dragon-collection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.dragon-collection-item {
+  position: relative;
+  display: flex;
+  flex: 0 0 110px;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  border: 2px solid transparent;
+  background: #fffdf8;
+  color: #222222;
+}
+
+.dragon-collection-item.active {
+  border-color: #007aff;
+}
+
+.dragon-collection-item img {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+}
+
+.dragon-rarity {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  color: #a66b00;
+  font-size: 10px;
+  text-shadow: 0 1px #ffffff;
+}
+
+.dragon-collection-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.new-dragon-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e5;
+}
+
+.new-dragon-form input {
+  flex: 1;
+}
+
+.dragon-status {
+  min-height: 20px;
+  margin-top: 10px;
+  color: #b42318;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 900px) {
   .task-list-topbar {
     display: grid;
@@ -753,6 +974,10 @@ button.secondary {
     padding: 18px;
   }
 
+  .dragon-content {
+    padding: 18px;
+  }
+
   .preset-form {
     grid-template-columns: minmax(0, 1fr);
     gap: 6px;
@@ -763,6 +988,19 @@ button.secondary {
   .preset-error,
   .preset-form-actions {
     grid-column: 1;
+  }
+
+  .dragon-current-panel {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .dragon-image {
+    width: min(75%, 220px);
+  }
+
+  .dragon-details {
+    width: 100%;
   }
 }
 

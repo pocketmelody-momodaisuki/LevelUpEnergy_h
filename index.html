@@ -48,6 +48,7 @@
           <span id="plannedDurationTotal">所要時間計：0分</span>
           <span id="remainingDurationTotal"></span>
           <div class="task-list-actions">
+            <button id="dragonManagerBtn" class="secondary" type="button">ドラゴン</button>
             <button id="operationLogBtn" class="secondary operation-log-btn">操作ログ</button>
             <button id="clearTasksBtn" class="secondary">クリア</button>
             <button id="addTaskBtn">タスク追加</button>
@@ -138,6 +139,54 @@
           </div>
         </form>
       </div>
+    </div>
+    <div id="dragonOverlay" class="overlay dragon-overlay hidden">
+      <section class="dragon-content" role="dialog" aria-modal="true" aria-labelledby="dragonTitle">
+        <header class="dragon-header">
+          <h2 id="dragonTitle">ドラゴン育成</h2>
+          <button id="closeDragonBtn" class="secondary" type="button">閉じる</button>
+        </header>
+        <div id="dragonCurrentPanel" class="dragon-current-panel">
+          <img id="dragonImage" class="dragon-image" alt="">
+          <div class="dragon-details">
+            <div id="dragonStageLabel" class="dragon-stage-label"></div>
+            <div class="dragon-name-editor">
+              <label for="dragonNameInput">名前（10文字まで）</label>
+              <input id="dragonNameInput" type="text" maxlength="10">
+              <button id="saveDragonNameBtn" type="button">名前を保存</button>
+            </div>
+            <div id="dragonLevelLabel" class="dragon-level-label"></div>
+            <div class="dragon-xp-track" role="progressbar" aria-label="次のレベルまでの経験値" aria-valuemin="0">
+              <div id="dragonXpFill" class="dragon-xp-fill"></div>
+            </div>
+            <div id="dragonXpLabel" class="dragon-xp-label"></div>
+            <div id="dragonStats" class="dragon-stats"></div>
+            <div id="dragonType" class="dragon-type"></div>
+            <button id="dragonMemoriesBtn" class="secondary" type="button">思い出ログ</button>
+          </div>
+        </div>
+        <section id="dragonMemories" class="dragon-memories hidden" aria-labelledby="dragonMemoriesTitle">
+          <h3 id="dragonMemoriesTitle">思い出ログ</h3>
+          <dl>
+            <dt>孵化した日</dt><dd id="memoryHatched"></dd>
+            <dt>子竜になった日</dt><dd id="memoryChild"></dd>
+            <dt>成竜になった日</dt><dd id="memoryAdult"></dd>
+            <dt>古竜になった日</dt><dd id="memoryElder"></dd>
+            <dt>タスク達成数</dt><dd id="memoryTasks"></dd>
+            <dt>XP累計</dt><dd id="memoryXp"></dd>
+          </dl>
+        </section>
+        <section class="dragon-collection-section">
+          <h3>ドラゴンコレクション</h3>
+          <div id="dragonCollection" class="dragon-collection"></div>
+        </section>
+        <form id="newDragonForm" class="new-dragon-form hidden">
+          <label for="newDragonName">新しい卵の名前（10文字まで）</label>
+          <input id="newDragonName" type="text" maxlength="10" value="たまご" required>
+          <button type="submit">新しい卵を育てる</button>
+        </form>
+        <div id="dragonStatus" class="dragon-status" role="status" aria-live="polite"></div>
+      </section>
     </div>
     <div id="confirmOverlay" class="overlay confirm-overlay hidden">
       <div class="confirm-content" role="alertdialog" aria-modal="true" aria-labelledby="confirmMessage">
