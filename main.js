@@ -84,8 +84,9 @@ function normalizeData(value) {
       days[date] = dayTasks.filter(task => task && typeof task === "object");
     } else if (dayTasks && typeof dayTasks === "object") {
       const entries = Object.entries(dayTasks);
-      if (entries.every(([key]) => /^\d+$/.test(key))) {
-        days[date] = entries
+      const taskEntries = entries.filter(([key]) => /^\d+$/.test(key));
+      if (dayTasks._empty === true || taskEntries.length === entries.length) {
+        days[date] = taskEntries
           .sort(([left], [right]) => Number(left) - Number(right))
           .map(([, task]) => task)
           .filter(task => task && typeof task === "object");
@@ -398,6 +399,11 @@ function setEditingEnabled(enabled) {
 
 function saveData(removeLegacyData = false) {
   const snapshot = JSON.parse(JSON.stringify(data));
+  Object.entries(snapshot.days).forEach(([date, tasks]) => {
+    if (Array.isArray(tasks) && tasks.length === 0) {
+      snapshot.days[date] = { _empty: true };
+    }
+  });
   setSyncStatus("Firebaseに保存中...");
   pendingSave = pendingSave
     .then(() => set(sharedDataRef, snapshot))
@@ -461,7 +467,7 @@ async function handleSharedData(snapshot) {
       const tasks = data.days[currentDate];
       await pendingSave;
       await update(sharedDataRef, {
-        [`days/${currentDate}`]: tasks.length > 0 ? tasks : {}
+        [`days/${currentDate}`]: tasks.length > 0 ? tasks : { _empty: true }
       });
       const refreshed = await get(sharedDataRef);
       data = normalizeData(refreshed.val());
@@ -1350,7 +1356,7 @@ function init() {
       try {
         await pendingSave;
         const updates = {
-          [`days/${selected}`]: tasks.length > 0 ? tasks : {},
+          [`days/${selected}`]: tasks.length > 0 ? tasks : { _empty: true },
           logs: data.logs
         };
         await update(sharedDataRef, updates);
