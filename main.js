@@ -534,7 +534,9 @@ function createDragon(name) {
       becameElderAt: "",
       totalTasksCompleted: 0,
       totalXpEarned: 0,
-      dailyBonusDates: {}
+      dailyBonusDates: {},
+      dailyXpSeconds: {},
+      dailyXpAwarded: {}
     }
   };
 }
@@ -571,6 +573,12 @@ function normalizeDragon(value) {
       totalXpEarned: Number.isFinite(logs.totalXpEarned) ? logs.totalXpEarned : 0,
       dailyBonusDates: logs.dailyBonusDates && typeof logs.dailyBonusDates === "object"
         ? logs.dailyBonusDates
+        : {},
+      dailyXpSeconds: logs.dailyXpSeconds && typeof logs.dailyXpSeconds === "object"
+        ? logs.dailyXpSeconds
+        : {},
+      dailyXpAwarded: logs.dailyXpAwarded && typeof logs.dailyXpAwarded === "object"
+        ? logs.dailyXpAwarded
         : {}
     }
   };
@@ -742,7 +750,23 @@ function awardDragonRewardsForCompletion(date, task) {
   if (!dragon || task.dragonXpAwarded) return;
   task.dragonXpAwarded = true;
   dragon.logs.totalTasksCompleted = (dragon.logs.totalTasksCompleted || 0) + 1;
-  addDragonXp(dragon, 1);
+  const dailyXpSeconds = dragon.logs.dailyXpSeconds;
+  const dailyXpAwarded = dragon.logs.dailyXpAwarded;
+  const previousSeconds = Number.isFinite(dailyXpSeconds[date])
+    ? Math.max(0, dailyXpSeconds[date])
+    : 0;
+  const previousXp = Number.isFinite(dailyXpAwarded[date])
+    ? Math.max(0, dailyXpAwarded[date])
+    : 0;
+  const totalSeconds = previousSeconds + getPlannedDurationSeconds(task);
+  const totalXp = Math.floor(totalSeconds / (30 * 60));
+  dailyXpSeconds[date] = totalSeconds;
+  dailyXpAwarded[date] = totalXp;
+  const earnedXp = Math.max(0, totalXp - previousXp);
+  if (earnedXp > 0) addDragonXp(dragon, earnedXp);
+  if (getTaskDurationSeconds(task, "actualMinutes") !== null) {
+    addDragonXp(dragon, 5);
+  }
 
   const dayTasks = data.days[date] || [];
   const dailyBonusDates = dragon.logs.dailyBonusDates || {};
